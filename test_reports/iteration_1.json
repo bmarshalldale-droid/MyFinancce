@@ -1,0 +1,36 @@
+{
+  "summary": "Backend testing of MyFinance complete. 18/18 pytest tests passed covering auth (register/login/me), default seed (4 buckets + budget), expenses CRUD, debts + payment lifecycle (partial, full payoff, paid list), budget upsert, buckets CRUD, multi-tenancy isolation, and 401 on missing auth. All endpoints behave per spec.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "DELETE /api/expenses/{id}, DELETE /api/debts/{id}, DELETE /api/buckets/{id}", "issue": "Returns 200 {ok:true} even when the id belongs to another user or doesn't exist. No 404 on cross-user delete. Isolation still holds (the delete does nothing because of user_id scoping), but API leaks no signal and is not idempotent-safe. Consider returning 404 when deleted_count == 0."},
+      {"endpoint": "POST /api/debts/{id}/payments", "issue": "Overpayments are silently clamped to remaining=0 (max(0, remaining-amount)). Not a bug per spec ('when payment >= remaining'), but there's no validation preventing negative or zero amounts."},
+      {"endpoint": "PUT /api/budget", "issue": "Returns the request body instead of the persisted document. Works fine because upsert matches, but could mislead clients. GET shows correct value."},
+      {"endpoint": "startup", "issue": "Uses deprecated @app.on_event('startup'/'shutdown'). Consider migrating to lifespan context for future FastAPI compatibility."}
+    ]
+  },
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": ["/app/backend/tests/test_myfinance_api.py", "/app/test_reports/pytest/pytest_results.xml"],
+  "action_items": [
+    "(Optional) Return 404 from DELETE endpoints when nothing was deleted to surface cross-user / invalid-id errors.",
+    "(Optional) Validate PaymentIn.amount > 0 and reject payments on already-paid debts.",
+    "(Optional) Migrate on_event to lifespan handlers."
+  ],
+  "critical_code_review_comments": [
+    "server.py is a single 289-line file — acceptable, under 700 LOC threshold, no split needed yet.",
+    "All DB/IO uses async motor — good.",
+    "MongoDB _id excluded via projections everywhere — good.",
+    "Env vars used with os.environ[...] and fail fast if missing — good. JWT_SECRET not hardcoded.",
+    "Pydantic models with Literal enums validate freq inputs correctly — good.",
+    "bcrypt hashing with gensalt, JWT HS256 with 30-day expiry — standard and correct.",
+    "CORS allow_origins defaults to '*' with allow_credentials=False — fine because Bearer auth (not cookies).",
+    "Minor: log_payment doesn't return 404 when fully paid debt gets another payment — could double-log on already-paid debts."
+  ],
+  "updated_files": ["/app/backend/tests/test_myfinance_api.py"],
+  "success_rate": {"backend": "100% (18/18)", "frontend": "N/A"},
+  "test_credentials": "Fresh users registered per-run via testuser+<ts>@example.com / password123. Shared test account demo.user@myfinance.test / password123 documented in /app/memory/test_credentials.md.",
+  "seed_data_creation": "Each test run creates 2 fresh users (A, B) via /api/auth/register. Associated seed data (4 buckets + 1 budget) auto-created by backend. Test creates/deletes scoped expenses, debts, buckets. No production data touched.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Pytest suite at /app/backend/tests/test_myfinance_api.py is idempotent (uses timestamped emails) and can be re-run any time. Only minor non-blocking suggestions remain. Frontend was not tested (backend-only request). Playbook auth checks (bcrypt $2b$, JWT, brute-force lockout) — bcrypt is $2b$, JWT works, but there is NO brute-force lockout implemented (not required by request but flag if spec demands it). No httpOnly cookies — this app uses Bearer token in localStorage per /app/memory/test_credentials.md which is by design."
+}
