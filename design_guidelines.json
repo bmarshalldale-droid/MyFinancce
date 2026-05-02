@@ -1,0 +1,135 @@
+{
+  "theme": "light",
+  "archetype": "1_organic_and_earthy",
+  "rationale": "Shifted away from the dark/lime 'fintech bro' aesthetic to a warm, organic, and trustworthy palette. Finance often causes anxiety; earthy tones (terracotta, bone white, moss green) introduce calm, clarity, and approachability. This fits the 'refresh design' request perfectly by doing the exact opposite of generic tech patterns.",
+  "typography": {
+    "fonts": [
+      {
+        "name": "Cabinet Grotesk",
+        "type": "heading",
+        "usage": "Headlines, big balance numbers, tab titles"
+      },
+      {
+        "name": "Manrope",
+        "type": "body",
+        "usage": "All body copy, labels, data tables, secondary metrics"
+      }
+    ],
+    "rules": {
+      "h1": "text-4xl sm:text-5xl font-black tracking-tighter leading-none",
+      "h2": "text-2xl sm:text-3xl font-bold tracking-tight",
+      "h3": "text-xl sm:text-2xl font-semibold tracking-tight",
+      "h4": "text-lg sm:text-xl font-medium",
+      "body": "text-base leading-relaxed text-[#1C1B1A]",
+      "labels_overlines": "text-xs font-bold uppercase tracking-[0.2em] text-[#7A7873]"
+    }
+  },
+  "colors": {
+    "background": {
+      "page": "#F5F4F0",
+      "surface": "#FFFFFF",
+      "surface_hover": "#F0EFEA",
+      "glass": "bg-white/80 backdrop-blur-xl"
+    },
+    "text": {
+      "primary": "#1C1B1A",
+      "secondary": "#7A7873",
+      "inverse": "#FFFFFF",
+      "brand": "#D1603D"
+    },
+    "brand": {
+      "primary": "#D1603D",
+      "primary_hover": "#B85334",
+      "secondary": "#4A6B5D",
+      "secondary_hover": "#3C574B",
+      "accent": "#E8A365"
+    },
+    "status": {
+      "success": "#4A6B5D",
+      "warning": "#D9943B",
+      "danger": "#C44D42",
+      "info": "#4A6B5D"
+    },
+    "borders": "#EAE8E3"
+  },
+  "layout_and_spacing": {
+    "container_padding": "p-6 sm:p-8",
+    "card_radius": "rounded-lg",
+    "card_border": "border border-[#EAE8E3]",
+    "card_shadow": "shadow-none hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)]",
+    "grid": {
+      "mobile": "grid-cols-1 gap-6",
+      "desktop": "grid-cols-1 md:grid-cols-4 lg:grid-cols-12 gap-6"
+    }
+  },
+  "components": {
+    "buttons": {
+      "primary": "bg-[#D1603D] text-[#FFFFFF] rounded-md px-6 py-3 font-semibold hover:bg-[#B85334] transition-colors focus:ring-2 focus:ring-[#D1603D]/50 focus:outline-none",
+      "secondary": "bg-[#F0EFEA] text-[#1C1B1A] rounded-md px-6 py-3 font-semibold hover:bg-[#EAE8E3] transition-colors focus:ring-2 focus:ring-[#EAE8E3] focus:outline-none",
+      "ghost": "text-[#7A7873] hover:text-[#1C1B1A] hover:bg-[#F0EFEA] rounded-md px-4 py-2 transition-colors"
+    },
+    "cards": {
+      "base": "bg-[#FFFFFF] border border-[#EAE8E3] rounded-lg p-6 flex flex-col gap-4",
+      "summary_tile": "col-span-1 bg-[#FFFFFF] border border-[#EAE8E3] rounded-lg p-6 flex flex-col justify-between"
+    },
+    "progress_bars": {
+      "track": "h-2 w-full bg-[#F0EFEA] rounded-full overflow-hidden",
+      "fill": "h-full bg-[#D1603D] rounded-full transition-all duration-700 ease-out"
+    },
+    "navigation": {
+      "mobile_bottom_bar": "fixed bottom-0 w-full bg-white/90 backdrop-blur-xl border-t border-[#EAE8E3] pb-safe pt-2 px-4 flex justify-around items-center z-50",
+      "nav_item_active": "text-[#D1603D] flex flex-col items-center gap-1 font-semibold",
+      "nav_item_inactive": "text-[#7A7873] hover:text-[#1C1B1A] flex flex-col items-center gap-1 font-medium"
+    },
+    "inputs": "bg-transparent border border-[#EAE8E3] rounded-md px-4 py-3 focus:border-[#D1603D] focus:ring-1 focus:ring-[#D1603D] outline-none transition-all w-full text-[#1C1B1A] placeholder:text-[#7A7873]",
+    "chips": "px-4 py-2 rounded-full border border-[#EAE8E3] text-sm font-medium hover:border-[#D1603D] hover:text-[#D1603D] transition-colors bg-[#FFFFFF] cursor-pointer"
+  },
+  "specific_screens": {
+    "auth": {
+      "layout": "Split screen on desktop (grid-cols-2), full screen stacked on mobile. Left/Top side: Minimalist login form with generous spacing. Right/Bottom side: Earthy texture background image.",
+      "background_image_id": "auth_bg"
+    },
+    "home_dashboard": {
+      "greeting": "h2 format, left aligned. Include user avatar on the top right.",
+      "surplus_card": "Hero metric card. Huge Cabinet Grotesk font for the amount. Use terracotta text for emphasis.",
+      "bucket_visual": "Horizontal stacked progress bar showing percentages, distinct earthy colors (terracotta, moss, ochre, clay)."
+    },
+    "expenses": {
+      "filter_chips": "Horizontal scrollable row of chips. Active chip should have a solid #F0EFEA background and #1C1B1A text with border-transparent.",
+      "list_items": "Flex row, optical alignment for emojis, crisp border-b border-[#EAE8E3] for separation."
+    },
+    "paid_celebration": {
+      "confetti": "Use canvas-confetti package. Trigger from the center of the screen when a debt hits 100%.",
+      "empty_state": "If no debts paid, show a warm, encouraging message with an earthy abstract Phosphor icon (e.g., Smiley, Sparkle)."
+    }
+  },
+  "media_assets": [
+    {
+      "category": "auth_bg",
+      "url": "https://images.unsplash.com/photo-1603484477859-abe6a73f9366?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzOTB8MHwxfHNlYXJjaHwxfHxhYnN0cmFjdCUyMHdhcm0lMjBlYXJ0aHklMjB0ZXh0dXJlJTIwcGFwZXIlMjBtaW5pbWFsaXN0fGVufDB8fHx8MTc3NzY4NjY4NHww&ixlib=rb-4.1.0&q=85",
+      "description": "Warm, earthy minimalist paper texture for the authentication screen background."
+    },
+    {
+      "category": "user_avatar",
+      "url": "https://images.unsplash.com/photo-1767175473698-859bc73e8e64?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxOTF8MHwxfHNlYXJjaHwxfHxwcm9mZXNzaW9uYWwlMjBwb3J0cmFpdCUyMHNtaWxpbmclMjBhZHVsdCUyMG5ldXRyYWwlMjBiYWNrZ3JvdW5kfGVufDB8fHx8MTc3NzY4NjY4NHww&ixlib=rb-4.1.0&q=85",
+      "description": "Professional smiling neutral avatar for user profile placeholder."
+    }
+  ],
+  "libraries": [
+    "@phosphor-icons/react",
+    "framer-motion",
+    "canvas-confetti",
+    "clsx",
+    "tailwind-merge"
+  ],
+  "instructions_to_main_agent": [
+    "Inject these color hexes directly into tailwind.config.js as custom properties or use them via inline utility classes.",
+    "Strictly follow the color palette. DO NOT use standard Tailwind colors like blue-500, green-500, or any generic slate colors unless matching the hexes provided.",
+    "Implement the Layout Rules strictly: cards should be flat, with exactly 1px border-[#EAE8E3], and rounded-md or rounded-lg (max 8px). Do NOT add large drop shadows to cards, use the subtle hover shadow defined.",
+    "Install and use @phosphor-icons/react for all icons, keeping stroke weight consistent (regular or light).",
+    "For all headings and primary balance numbers, import and use 'Cabinet Grotesk' font. Use 'Manrope' for body text, data lists, and small labels. Remember to add 'tracking-tight' to headings.",
+    "Data-testid attribute MUST be included on all buttons, links, inputs, tabs, and interactive cards to enable automated testing (e.g., data-testid='login-submit-button').",
+    "Implement bottom mobile navigation with framer-motion layout animations for the active tab indicator.",
+    "Avoid heavy Shadcn component wrappers for basic cards if it complicates overriding styles; standard divs with Tailwind are preferred to ensure the custom border and padding rules are perfectly applied."
+  ]
+}
