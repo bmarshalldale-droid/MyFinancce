@@ -655,7 +655,7 @@ function DebtsTab({ debts, totalDebt, monthlyOut, onAdd, onPayment, onDelete }) 
               <div className="flex justify-between items-center">
                 <div className="flex flex-wrap gap-1">
                   {recent.map((p,i) => (
-                    <span key={i} className="text-[10px] bg-surface-alt rounded px-1.5 py-0.5 font-mono text-muted">{p.date} · {fmt(p.amount)}</span>
+                    <span key={`${p.date}-${p.amount}-${i}`} className="text-[10px] bg-surface-alt rounded px-1.5 py-0.5 font-mono text-muted">{p.date} · {fmt(p.amount)}</span>
                   ))}
                 </div>
                 <div className="flex gap-1.5">

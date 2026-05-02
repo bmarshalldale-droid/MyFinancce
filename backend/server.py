@@ -11,6 +11,7 @@ from typing import List, Optional, Literal
 
 import jwt
 import bcrypt
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, APIRouter, HTTPException, Depends, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from starlette.middleware.cors import CORSMiddleware
@@ -173,7 +174,9 @@ async def update_expense(eid: str, body: ExpenseIn, user=Depends(get_current_use
 
 @api.delete('/expenses/{eid}')
 async def delete_expense(eid: str, user=Depends(get_current_user)):
-    await db.expenses.delete_one({'id': eid, 'user_id': user['id']})
+    res = await db.expenses.delete_one({'id': eid, 'user_id': user['id']})
+    if res.deleted_count == 0:
+        raise HTTPException(status_code=404, detail='Expense not found')
     return {'ok': True}
 
 # ---------- Debts ----------
@@ -196,14 +199,20 @@ async def add_debt(body: DebtIn, user=Depends(get_current_user)):
 
 @api.delete('/debts/{did}')
 async def delete_debt(did: str, user=Depends(get_current_user)):
-    await db.debts.delete_one({'id': did, 'user_id': user['id']})
+    res = await db.debts.delete_one({'id': did, 'user_id': user['id']})
+    if res.deleted_count == 0:
+        raise HTTPException(status_code=404, detail='Debt not found')
     return {'ok': True}
 
 @api.post('/debts/{did}/payments')
 async def log_payment(did: str, body: PaymentIn, user=Depends(get_current_user)):
+    if body.amount <= 0:
+        raise HTTPException(status_code=400, detail='Payment amount must be greater than zero')
     debt = await db.debts.find_one({'id': did, 'user_id': user['id']})
     if not debt:
         raise HTTPException(status_code=404, detail='Debt not found')
+    if debt.get('paid'):
+        raise HTTPException(status_code=400, detail='Debt already paid off')
     new_remaining = max(0, debt['remaining'] - body.amount)
     payments = debt.get('payments', []) + [body.model_dump()]
     update = {'remaining': new_remaining, 'payments': payments}
@@ -254,7 +263,9 @@ async def update_bucket(bid: str, body: BucketIn, user=Depends(get_current_user)
 
 @api.delete('/buckets/{bid}')
 async def delete_bucket(bid: str, user=Depends(get_current_user)):
-    await db.buckets.delete_one({'id': bid, 'user_id': user['id']})
+    res = await db.buckets.delete_one({'id': bid, 'user_id': user['id']})
+    if res.deleted_count == 0:
+        raise HTTPException(status_code=404, detail='Bucket not found')
     return {'ok': True}
 
 @api.get('/')
@@ -275,14 +286,16 @@ app.add_middleware(
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-@app.on_event('startup')
-async def startup():
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    # Startup
     await db.users.create_index('email', unique=True)
     await db.expenses.create_index('user_id')
     await db.debts.create_index('user_id')
     await db.buckets.create_index('user_id')
     logger.info('MyFinance API ready')
-
-@app.on_event('shutdown')
-async def shutdown():
+    yield
+    # Shutdown
     client.close()
+
+app.router.lifespan_context = lifespan

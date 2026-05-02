@@ -208,7 +208,8 @@ class TestMultiTenancy:
         r = requests.put(f"{API}/expenses/{eid}", json={'name': 'hacked', 'amount': 1, 'freq': 'monthly'}, headers=hb)
         assert r.status_code == 404
         r = requests.delete(f"{API}/expenses/{eid}", headers=hb)
-        # delete always returns 200 in current impl; verify A's still exists
+        # NEW: cross-user delete must return 404 (not leak 200)
+        assert r.status_code == 404
         r = requests.get(f"{API}/expenses", headers=ha)
         assert any(x['id'] == eid for x in r.json()), "B should not be able to delete A's expense"
 
@@ -229,3 +230,102 @@ class TestMultiTenancy:
         b_buckets = r.json()
         assert len(b_buckets) == 4
         assert not any(x['id'] == a_bid for x in b_buckets)
+
+
+# ---------- NEW: DELETE 404 polish ----------
+class TestDelete404:
+    def test_delete_expense_nonexistent(self, user_a):
+        r = requests.delete(f"{API}/expenses/does-not-exist-xyz", headers=H(user_a['token']))
+        assert r.status_code == 404
+        assert r.json().get('detail') == 'Expense not found'
+
+    def test_delete_debt_nonexistent(self, user_a):
+        r = requests.delete(f"{API}/debts/does-not-exist-xyz", headers=H(user_a['token']))
+        assert r.status_code == 404
+        assert r.json().get('detail') == 'Debt not found'
+
+    def test_delete_bucket_nonexistent(self, user_a):
+        r = requests.delete(f"{API}/buckets/does-not-exist-xyz", headers=H(user_a['token']))
+        assert r.status_code == 404
+        assert r.json().get('detail') == 'Bucket not found'
+
+    def test_delete_debt_cross_user_404(self, user_a, user_b):
+        r = requests.post(f"{API}/debts", json={'name': 'XU', 'original': 10, 'remaining': 10}, headers=H(user_a['token']))
+        did = r.json()['id']
+        r = requests.delete(f"{API}/debts/{did}", headers=H(user_b['token']))
+        assert r.status_code == 404
+        # owner can still delete -> 200
+        r = requests.delete(f"{API}/debts/{did}", headers=H(user_a['token']))
+        assert r.status_code == 200 and r.json() == {'ok': True}
+
+    def test_delete_bucket_cross_user_404(self, user_a, user_b):
+        # use one of A's seeded buckets
+        r = requests.get(f"{API}/buckets", headers=H(user_a['token']))
+        bid = r.json()[0]['id']
+        r = requests.delete(f"{API}/buckets/{bid}", headers=H(user_b['token']))
+        assert r.status_code == 404
+
+    def test_delete_owned_returns_ok_true(self, user_a):
+        h = H(user_a['token'])
+        r = requests.post(f"{API}/buckets", json={'name': 'TmpDel', 'pct': 1, 'colour': '#abcdef'}, headers=h)
+        bid = r.json()['id']
+        r = requests.delete(f"{API}/buckets/{bid}", headers=h)
+        assert r.status_code == 200 and r.json() == {'ok': True}
+
+
+# ---------- NEW: Payment validation ----------
+class TestPaymentValidation:
+    def test_payment_amount_zero_400(self, user_a):
+        h = H(user_a['token'])
+        r = requests.post(f"{API}/debts", json={'name': 'PV0', 'original': 100, 'remaining': 100}, headers=h)
+        did = r.json()['id']
+        r = requests.post(f"{API}/debts/{did}/payments", json={'amount': 0, 'date': '2026-01-01'}, headers=h)
+        assert r.status_code == 400
+        assert r.json().get('detail') == 'Payment amount must be greater than zero'
+
+    def test_payment_amount_negative_400(self, user_a):
+        h = H(user_a['token'])
+        r = requests.post(f"{API}/debts", json={'name': 'PVneg', 'original': 100, 'remaining': 100}, headers=h)
+        did = r.json()['id']
+        r = requests.post(f"{API}/debts/{did}/payments", json={'amount': -5, 'date': '2026-01-01'}, headers=h)
+        assert r.status_code == 400
+        assert r.json().get('detail') == 'Payment amount must be greater than zero'
+
+    def test_payment_on_paid_debt_400(self, user_a):
+        h = H(user_a['token'])
+        r = requests.post(f"{API}/debts", json={'name': 'Payoff', 'original': 50, 'remaining': 50}, headers=h)
+        did = r.json()['id']
+        # Pay off
+        r = requests.post(f"{API}/debts/{did}/payments", json={'amount': 50, 'date': '2026-01-01'}, headers=h)
+        assert r.status_code == 200 and r.json()['fully_paid'] is True
+        # Second payment should be rejected
+        r = requests.post(f"{API}/debts/{did}/payments", json={'amount': 10, 'date': '2026-02-01'}, headers=h)
+        assert r.status_code == 400
+        assert r.json().get('detail') == 'Debt already paid off'
+
+    def test_payment_partial_then_full_flow(self, user_a):
+        h = H(user_a['token'])
+        r = requests.post(f"{API}/debts", json={'name': 'Flow', 'original': 200, 'remaining': 200}, headers=h)
+        did = r.json()['id']
+        r = requests.post(f"{API}/debts/{did}/payments", json={'amount': 80, 'date': '2026-01-01'}, headers=h)
+        assert r.status_code == 200
+        assert r.json() == {'fully_paid': False, 'remaining': 120}
+        # final payment moves to /debts/paid
+        r = requests.post(f"{API}/debts/{did}/payments", json={'amount': 120, 'date': '2026-02-01'}, headers=h)
+        assert r.status_code == 200 and r.json()['fully_paid'] is True
+        r = requests.get(f"{API}/debts/paid", headers=h)
+        assert any(x['id'] == did and x['paid'] is True and x['paidDate'] == '2026-02-01' for x in r.json())
+
+
+# ---------- NEW: Lifespan / startup index seed ----------
+class TestLifespan:
+    def test_root_ok(self):
+        r = requests.get(f"{API}/")
+        assert r.status_code == 200
+        assert r.json() == {'app': 'MyFinance API', 'status': 'ok'}
+
+    def test_unique_email_index_enforced(self, user_a):
+        # Duplicate registration must 400 (proves users.email index/check works after lifespan migration)
+        r = requests.post(f"{API}/auth/register", json={'email': user_a['email'], 'password': 'password123'})
+        assert r.status_code == 400
+
