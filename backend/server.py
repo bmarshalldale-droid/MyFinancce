@@ -15,12 +15,26 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, APIRouter, HTTPException, Depends, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from starlette.middleware.cors import CORSMiddleware
-from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, EmailStr, Field
 
 # ---------- Setup ----------
 mongo_url = os.environ['MONGO_URL']
-client = AsyncIOMotorClient(mongo_url)
+USE_MOCK = 'localhost' in mongo_url or '127.0.0.1' in mongo_url
+
+if USE_MOCK:
+    try:
+        import socket
+        s = socket.create_connection(('localhost', 27017), timeout=1)
+        s.close()
+        from motor.motor_asyncio import AsyncIOMotorClient
+        client = AsyncIOMotorClient(mongo_url)
+    except (ConnectionRefusedError, OSError):
+        from mongomock_motor import AsyncMongoMockClient
+        client = AsyncMongoMockClient()
+else:
+    from motor.motor_asyncio import AsyncIOMotorClient
+    client = AsyncIOMotorClient(mongo_url)
+
 db = client[os.environ['DB_NAME']]
 
 JWT_SECRET = os.environ['JWT_SECRET']
